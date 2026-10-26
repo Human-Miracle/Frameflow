@@ -48,3 +48,17 @@ actual screenshot, map it accurately into a device, create at least two
 visual treatments, and export a high-resolution image. Motion Studio
 should exist in the product architecture and navigation, but must not
 pretend to record or export video until those capabilities work.
+
+## Development
+
+Requires Node.js 20.9 or later.
+
+```bash
+npm install
+npm run dev          # http://localhost:3000
+npm run check        # format, lint, typecheck, unit tests
+npm run test:e2e     # builds the app and runs Playwright in Chromium
+```
+
+Current progress and limitations are in `docs/IMPLEMENTATION_STATUS.md`.
+

@@ -1,0 +1,46 @@
+.main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-5);
+}
+
+.title {
+  font-size: var(--text-xl);
+  margin: 0 0 var(--space-4);
+}
+
+.notice {
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-warning);
+  background: var(--color-warning-bg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-6);
+}
+
+.notice strong {
+  color: var(--color-warning);
+}
+
+.section h2 {
+  font-size: var(--text-md);
+  margin: var(--space-5) 0 var(--space-2);
+}
+
+.section p,
+.section li {
+  color: var(--color-text-muted);
+}
+
+.steps {
+  padding-left: var(--space-5);
+}
+
+.disabled {
+  margin-top: var(--space-6);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
