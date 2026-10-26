@@ -1,10 +1,14 @@
 import { readFile } from 'node:fs/promises';
-import type { Download, Page } from '@playwright/test';
+import { expect, type Download, type Page } from '@playwright/test';
 
 export const fixture = (name: string) => new URL(`../fixtures/${name}`, import.meta.url).pathname;
 
+/** Uploads fixtures and waits until the batch has been fully processed. */
 export async function upload(page: Page, ...names: string[]) {
+  const dropzone = page.locator('[data-upload-batches]');
+  const before = Number(await dropzone.getAttribute('data-upload-batches'));
   await page.setInputFiles('#screenshot-input', names.map(fixture));
+  await expect(dropzone).toHaveAttribute('data-upload-batches', String(before + 1));
 }
 
 export async function exportPng(page: Page): Promise<{ download: Download; bytes: Buffer }> {

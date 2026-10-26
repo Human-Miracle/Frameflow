@@ -13,6 +13,8 @@ export interface ScreenEntry {
   height: number;
   bytes: number;
   bitmap: ImageBitmap;
+  /** Original file bytes, kept so the scene can be saved without re-encoding. */
+  blob: Blob;
   thumbnailUrl: string;
 }
 
@@ -34,13 +36,17 @@ export type StudioAction =
   | { type: 'fitChanged'; layerId: string; fit: ScreenAssignment['fit'] }
   | { type: 'visibilityToggled'; layerId: string }
   | { type: 'lockToggled'; layerId: string }
+  | { type: 'layerMoved'; layerId: string; to: LayerMove }
+  | { type: 'sceneRenamed'; name: string }
   | { type: 'layoutReset' }
   | { type: 'canvasResized'; width: number; height: number };
 
+export type LayerMove = 'forward' | 'backward' | 'front' | 'back';
+
 const frontLayerId = (scene: Scene): string | null => scene.layers.at(-1)?.id ?? null;
 
-export function initialStudioState(): StudioState {
-  const scene = createScene({ id: 'scene-1', templateId: 'single-hero' });
+export function initialStudioState(id = 'scene-1'): StudioState {
+  const scene = createScene({ id, templateId: 'single-hero' });
   return { scene, screens: [], selectedLayerId: frontLayerId(scene) };
 }
 
@@ -135,6 +141,14 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
       return updateLayer(state, action.layerId, (layer) => ({ ...layer, visible: !layer.visible }));
     case 'lockToggled':
       return updateLayer(state, action.layerId, (layer) => ({ ...layer, locked: !layer.locked }));
+    case 'layerMoved': {
+      const layers = moveLayer(state.scene.layers, action.layerId, action.to);
+      return layers === state.scene.layers ? state : { ...state, scene: { ...state.scene, layers } };
+    }
+    case 'sceneRenamed': {
+      const name = action.name.slice(0, 120);
+      return { ...state, scene: { ...state.scene, name: name.trim() === '' ? state.scene.name : name } };
+    }
     case 'layoutReset': {
       const reset = applyTemplate(state.scene, state.scene.templateId);
       return { ...state, scene: { ...reset, background: state.scene.background } };
@@ -148,4 +162,31 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
         },
       };
   }
+}
+
+/**
+ * Moves a layer within the paint order (index 0 is drawn first, at the back).
+ * Returns the same array when the move changes nothing.
+ */
+export function moveLayer<T extends { id: string }>(
+  layers: readonly T[],
+  layerId: string,
+  to: LayerMove,
+): T[] {
+  const from = layers.findIndex((layer) => layer.id === layerId);
+  if (from === -1) return layers as T[];
+  const last = layers.length - 1;
+  const target =
+    to === 'front'
+      ? last
+      : to === 'back'
+        ? 0
+        : to === 'forward'
+          ? Math.min(last, from + 1)
+          : Math.max(0, from - 1);
+  if (target === from) return layers as T[];
+  const next = [...layers];
+  const [layer] = next.splice(from, 1);
+  next.splice(target, 0, layer!);
+  return next;
 }

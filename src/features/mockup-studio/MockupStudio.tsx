@@ -15,7 +15,10 @@ import { ACCEPTED_MIME_TYPES } from '@/upload/validate';
 import { decodeScreenshot } from '@/upload/decode';
 import { OptionGroup, Panel, RangeField } from './controls';
 import { ScenePreview } from './ScenePreview';
-import { initialStudioState, studioReducer, type ScreenEntry } from './state';
+import { canRedo, canUndo, editorReducer, initialEditorState } from './history';
+import { OpenSceneDialog } from './OpenSceneDialog';
+import { initialStudioState, type LayerMove, type ScreenEntry } from './state';
+import { useSceneDocument } from './useSceneDocument';
 import styles from './MockupStudio.module.css';
 
 type UploadStatus =
@@ -32,10 +35,16 @@ const percent = (value: number) => `${Math.round(value * 100)}%`;
 const megabytes = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
 export function MockupStudio() {
-  const [state, dispatch] = useReducer(studioReducer, undefined, initialStudioState);
+  const [editor, dispatch] = useReducer(editorReducer, undefined, () =>
+    initialEditorState(initialStudioState(crypto.randomUUID())),
+  );
+  const state = editor.studio;
+  const [openDialog, setOpenDialog] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>({ kind: 'idle' });
   const [rawExportStatus, setExportStatus] = useState<ExportStatus>({ kind: 'idle' });
   const [dragging, setDragging] = useState(false);
+  // Number of finished upload batches; exposed on the drop zone so automation can wait for completion.
+  const [uploadBatches, setUploadBatches] = useState(0);
   const { scene, screens, selectedLayerId } = state;
 
   // Release decoded bitmaps and thumbnail URLs when the workspace closes.
@@ -61,6 +70,35 @@ export function MockupStudio() {
     };
   }, [screens]);
 
+  const sceneDoc = useSceneDocument(editor, dispatch, lookup);
+  const checkpoint = useCallback(() => dispatch({ type: 'checkpoint' }), []);
+
+  // Undo, redo and save shortcuts. Text fields keep their own undo.
+  const shortcuts = useRef({ save: sceneDoc.save });
+  useEffect(() => {
+    shortcuts.current = { save: sceneDoc.save };
+  }, [sceneDoc.save]);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey)) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.matches('input[type="text"], textarea')) return;
+      const key = event.key.toLowerCase();
+      if (key === 'z') {
+        event.preventDefault();
+        dispatch({ type: event.shiftKey ? 'redo' : 'undo' });
+      } else if (key === 'y') {
+        event.preventDefault();
+        dispatch({ type: 'redo' });
+      } else if (key === 's') {
+        event.preventDefault();
+        void shortcuts.current.save();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   // Any edit makes a previous export result stale, so results are shown only for the scene they came from.
   const exportStatus: ExportStatus =
     (rawExportStatus.kind === 'success' || rawExportStatus.kind === 'error') &&
@@ -82,13 +120,14 @@ export function MockupStudio() {
     const failures: string[] = [];
     for (const file of list) {
       try {
-        const screen = await decodeScreenshot(file);
+        const screen = await decodeScreenshot(file, file.name);
         dispatch({ type: 'screenAdded', screen });
       } catch (error) {
         failures.push(`${file.name}: ${toFrameflowError(error).message}`);
       }
     }
     setUploadStatus(failures.length > 0 ? { kind: 'error', message: failures.join(' ') } : { kind: 'idle' });
+    setUploadBatches((count) => count + 1);
   }, []);
 
   const removeScreen = (screen: ScreenEntry) => {
@@ -96,6 +135,8 @@ export function MockupStudio() {
     screen.bitmap.close();
     URL.revokeObjectURL(screen.thumbnailUrl);
   };
+
+  const moveLayer = (layerId: string, to: LayerMove) => dispatch({ type: 'layerMoved', layerId, to });
 
   const readiness = exportReadiness(scene);
   const selected = scene.layers.find((layer) => layer.id === selectedLayerId) ?? null;
@@ -145,6 +186,8 @@ export function MockupStudio() {
           <div
             className={styles.dropzone}
             data-dragging={dragging}
+            data-upload-batches={uploadBatches}
+            aria-busy={uploadStatus.kind === 'processing'}
             onDragOver={(event) => {
               event.preventDefault();
               setDragging(true);
@@ -261,6 +304,100 @@ export function MockupStudio() {
       </aside>
 
       <section className={styles.canvasColumn} aria-label="Preview">
+        <div className={styles.toolbar} role="toolbar" aria-label="Scene">
+          <input
+            key={`${scene.id}:${scene.name}`}
+            type="text"
+            className={styles.nameInput}
+            aria-label="Scene name"
+            defaultValue={scene.name}
+            maxLength={120}
+            onBlur={(event) => {
+              if (event.target.value.trim() && event.target.value !== scene.name) {
+                dispatch({ type: 'sceneRenamed', name: event.target.value.trim() });
+                checkpoint();
+              } else {
+                event.target.value = scene.name;
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.currentTarget.blur();
+            }}
+          />
+          <span className={styles.saveState} data-testid="save-state" aria-live="polite">
+            {sceneDoc.status.kind === 'busy'
+              ? sceneDoc.status.label
+              : sceneDoc.dirty
+                ? sceneDoc.saved || sceneDoc.savedAt
+                  ? 'Unsaved changes'
+                  : 'Not saved yet'
+                : sceneDoc.savedAt
+                  ? `Saved ${new Date(sceneDoc.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                  : 'Not saved yet'}
+          </span>
+          <div className={styles.toolbarGroup}>
+            <button
+              type="button"
+              className={styles.toolButton}
+              onClick={() => dispatch({ type: 'undo' })}
+              disabled={!canUndo(editor)}
+              aria-keyshortcuts="Control+Z Meta+Z"
+            >
+              Undo
+            </button>
+            <button
+              type="button"
+              className={styles.toolButton}
+              onClick={() => dispatch({ type: 'redo' })}
+              disabled={!canRedo(editor)}
+              aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y"
+            >
+              Redo
+            </button>
+          </div>
+          <div className={styles.toolbarGroup}>
+            <button type="button" className={styles.toolButton} onClick={sceneDoc.newScene}>
+              New
+            </button>
+            <button
+              type="button"
+              className={styles.toolButton}
+              onClick={() => {
+                setOpenDialog(true);
+                void sceneDoc.refreshList();
+              }}
+            >
+              Open…
+            </button>
+            <button
+              type="button"
+              className={styles.toolButton}
+              onClick={() => void sceneDoc.saveCopy()}
+              disabled={sceneDoc.status.kind === 'busy'}
+            >
+              Save as copy
+            </button>
+            <button
+              type="button"
+              className={`${styles.toolButton} ${styles.toolButtonPrimary}`}
+              onClick={() => void sceneDoc.save()}
+              disabled={sceneDoc.status.kind === 'busy'}
+              aria-keyshortcuts="Control+S Meta+S"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+        {sceneDoc.status.kind === 'error' && (
+          <p className={`${styles.errorMessage} ${styles.toolbarMessage}`} role="alert">
+            {sceneDoc.status.message}
+          </p>
+        )}
+        {sceneDoc.status.kind === 'notice' && (
+          <p className={`${styles.warningMessage} ${styles.toolbarMessage}`} role="alert">
+            {sceneDoc.status.message}
+          </p>
+        )}
         <ScenePreview
           scene={scene}
           screens={lookup}
@@ -275,8 +412,8 @@ export function MockupStudio() {
       <aside className={styles.sidebar} aria-label="Device and export settings">
         <Panel title="Devices">
           <ul className={styles.layerList} aria-label="Devices, front to back">
-            {[...scene.layers].reverse().map((layer) => (
-              <li key={layer.id}>
+            {[...scene.layers].reverse().map((layer, index) => (
+              <li key={layer.id} className={styles.layerRow}>
                 <button
                   type="button"
                   className={styles.layerButton}
@@ -293,6 +430,24 @@ export function MockupStudio() {
                       .filter(Boolean)
                       .join(' · ')}
                   </span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.orderButton}
+                  aria-label={`Move ${layer.name} forward`}
+                  disabled={index === 0}
+                  onClick={() => moveLayer(layer.id, 'forward')}
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  className={styles.orderButton}
+                  aria-label={`Move ${layer.name} backward`}
+                  disabled={index === scene.layers.length - 1}
+                  onClick={() => moveLayer(layer.id, 'backward')}
+                >
+                  ↓
                 </button>
               </li>
             ))}
@@ -348,6 +503,7 @@ export function MockupStudio() {
                 step={0.005}
                 format={percent}
                 disabled={selected.locked}
+                onCommit={checkpoint}
                 onChange={(x) => dispatch({ type: 'transformChanged', layerId: selected.id, patch: { x } })}
               />
               <RangeField
@@ -358,6 +514,7 @@ export function MockupStudio() {
                 step={0.005}
                 format={percent}
                 disabled={selected.locked}
+                onCommit={checkpoint}
                 onChange={(y) => dispatch({ type: 'transformChanged', layerId: selected.id, patch: { y } })}
               />
               <RangeField
@@ -368,6 +525,7 @@ export function MockupStudio() {
                 step={0.01}
                 format={percent}
                 disabled={selected.locked}
+                onCommit={checkpoint}
                 onChange={(height) =>
                   dispatch({ type: 'transformChanged', layerId: selected.id, patch: { height } })
                 }
@@ -380,6 +538,7 @@ export function MockupStudio() {
                 step={0.5}
                 format={(value) => `${value}°`}
                 disabled={selected.locked}
+                onCommit={checkpoint}
                 onChange={(rotation) =>
                   dispatch({ type: 'transformChanged', layerId: selected.id, patch: { rotation } })
                 }
@@ -464,6 +623,17 @@ export function MockupStudio() {
           )}
         </Panel>
       </aside>
+      <OpenSceneDialog
+        open={openDialog}
+        scenes={sceneDoc.savedScenes}
+        currentId={scene.id}
+        onClose={() => setOpenDialog(false)}
+        onDelete={(id) => void sceneDoc.remove(id)}
+        onOpen={(id) => {
+          setOpenDialog(false);
+          void sceneDoc.open(id);
+        }}
+      />
     </main>
   );
 }

@@ -27,3 +27,6 @@ This file summarizes current decisions. Full records are in `docs/ADR/`.
     Canvas 2D renderer; screenshots stay in the browser (ADR 0008).
 12. **Single package with module folders** --- one Next.js package until
     the render worker arrives (ADR 0009).
+13. **Browser-local scene persistence** --- scenes and their original
+    screenshots are saved in IndexedDB behind a repository interface
+    (ADR 0010).

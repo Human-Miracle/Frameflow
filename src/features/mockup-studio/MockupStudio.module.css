@@ -449,3 +449,151 @@
     border-bottom: 1px solid var(--color-border);
   }
 }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  flex-wrap: wrap;
+}
+
+.nameInput {
+  min-width: 0;
+  flex: 1 1 180px;
+  max-width: 320px;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.nameInput:hover,
+.nameInput:focus {
+  border-color: var(--color-border-strong);
+  background: var(--color-bg);
+}
+
+.saveState {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  margin-right: auto;
+}
+
+.toolbarGroup {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.toolButton {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.toolButton:hover:not(:disabled) {
+  background: var(--color-surface-raised);
+}
+
+.toolButton:disabled,
+.orderButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.toolButtonPrimary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-ink);
+  font-weight: 600;
+}
+
+.toolButtonPrimary:hover:not(:disabled) {
+  background: var(--color-accent-strong);
+}
+
+.toolbarMessage {
+  margin: var(--space-2) var(--space-4) 0;
+}
+
+.layerRow {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.orderButton {
+  flex-shrink: 0;
+  width: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: transparent;
+  cursor: pointer;
+}
+
+.orderButton:hover:not(:disabled) {
+  background: var(--color-surface-raised);
+}
+
+.dialog {
+  width: min(720px, calc(100vw - 32px));
+  max-height: min(640px, calc(100vh - 64px));
+  padding: var(--space-5);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.dialogHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.dialogTitle {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.emptyList {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.sceneList {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sceneItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.sceneThumb {
+  width: 96px;
+  height: 54px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+}

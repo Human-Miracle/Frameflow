@@ -11,27 +11,34 @@ export interface DecodedScreen {
   height: number;
   bytes: number;
   bitmap: ImageBitmap;
+  /** The original, unmodified file. Saved scenes store this, never a re-encoded copy. */
+  blob: Blob;
   /** Object URL for thumbnails; revoke when the screen is removed. */
   thumbnailUrl: string;
 }
 
 /**
- * Validates and decodes an uploaded screenshot entirely in the browser. The
- * file never leaves the device: there is no upload request in this milestone.
+ * Validates and decodes a screenshot entirely in the browser. Used for new
+ * uploads and for screenshots restored from a saved scene, which are treated
+ * as untrusted input and validated again. Nothing is sent over the network.
  */
-export function decodeScreenshot(file: File): Promise<DecodedScreen> {
+export function decodeScreenshot(
+  source: Blob,
+  name: string,
+  options: { id?: string; operation?: string } = {},
+): Promise<DecodedScreen> {
   return traced(
-    'upload.decode',
-    { bytes: file.size },
+    options.operation ?? 'upload.decode',
+    { bytes: source.size },
     async () => {
-      const bytes = new Uint8Array(await file.arrayBuffer());
+      const bytes = new Uint8Array(await source.arrayBuffer());
       const validation = validateUploadBytes(bytes);
       if (!validation.ok) throw validation.error;
       const header = validation.value;
+      const blob = new Blob([bytes], { type: `image/${header.format}` });
 
       let bitmap: ImageBitmap;
       try {
-        const blob = new Blob([bytes], { type: `image/${header.format}` });
         bitmap = await createImageBitmap(blob, {
           imageOrientation: 'from-image',
           colorSpaceConversion: 'default',
@@ -40,9 +47,7 @@ export function decodeScreenshot(file: File): Promise<DecodedScreen> {
         throw new FrameflowError(
           'IMAGE_DECODE_FAILED',
           'This image could not be decoded. It may be damaged; re-export it and try again.',
-          {
-            cause: error,
-          },
+          { cause: error },
         );
       }
       if (!decodedSizeMatches(header, bitmap)) {
@@ -54,14 +59,15 @@ export function decodeScreenshot(file: File): Promise<DecodedScreen> {
       }
 
       return {
-        id: `screen-${crypto.randomUUID()}`,
-        name: file.name.slice(0, 120) || 'Screenshot',
+        id: options.id ?? `screen-${crypto.randomUUID()}`,
+        name: name.slice(0, 120) || 'Screenshot',
         format: header.format,
         width: bitmap.width,
         height: bitmap.height,
         bytes: bytes.length,
         bitmap,
-        thumbnailUrl: URL.createObjectURL(new Blob([bytes], { type: `image/${header.format}` })),
+        blob,
+        thumbnailUrl: URL.createObjectURL(blob),
       };
     },
     (error) => toFrameflowError(error).code,

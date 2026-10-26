@@ -81,7 +81,9 @@ test('minimal and cinematic presets visibly differ', async ({ page }) => {
 
 test('three-device stack keeps layer order and screen alignment', async ({ page }) => {
   await page.getByText('Cinematic Stack', { exact: true }).click();
-  await expect(page.getByRole('list', { name: 'Devices, front to back' }).getByRole('button')).toHaveCount(3);
+  await expect(page.getByRole('list', { name: 'Devices, front to back' }).getByRole('listitem')).toHaveCount(
+    3,
+  );
   await upload(page, 'quadrants.png');
   // The second screenshot goes to the selected (front) device.
   await upload(page, 'dark-ui.png');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { initialStudioState, studioReducer, type ScreenEntry, type StudioState } from './state';
+import { initialStudioState, moveLayer, studioReducer, type ScreenEntry, type StudioState } from './state';
 
 const screen = (id: string): ScreenEntry => ({
   id,
@@ -9,6 +9,7 @@ const screen = (id: string): ScreenEntry => ({
   height: 2556,
   bytes: 1,
   bitmap: {} as ImageBitmap,
+  blob: new Blob(),
   thumbnailUrl: '',
 });
 
@@ -91,5 +92,43 @@ describe('studioReducer', () => {
     const state = run(initialStudioState(), { type: 'canvasResized', width: 2160, height: 2700 });
     expect(state.scene.canvas).toMatchObject({ width: 2160, height: 2700 });
     expect(state.scene.layers[0]!.transform).toEqual(initialStudioState().scene.layers[0]!.transform);
+  });
+});
+
+describe('moveLayer', () => {
+  const layers = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+  const ids = (list: { id: string }[]) => list.map((l) => l.id).join('');
+
+  it('moves one step forward or backward in paint order', () => {
+    expect(ids(moveLayer(layers, 'a', 'forward'))).toBe('bac');
+    expect(ids(moveLayer(layers, 'c', 'backward'))).toBe('acb');
+  });
+
+  it('moves to the front or back', () => {
+    expect(ids(moveLayer(layers, 'a', 'front'))).toBe('bca');
+    expect(ids(moveLayer(layers, 'c', 'back'))).toBe('cab');
+  });
+
+  it('returns the same array when nothing changes', () => {
+    expect(moveLayer(layers, 'c', 'forward')).toBe(layers);
+    expect(moveLayer(layers, 'a', 'back')).toBe(layers);
+    expect(moveLayer(layers, 'missing', 'front')).toBe(layers);
+  });
+
+  it('reordering changes paint order deterministically through the reducer', () => {
+    const state = run(
+      initialStudioState(),
+      { type: 'templateChanged', templateId: 'trio-stack' },
+      { type: 'layerMoved', layerId: 'left', to: 'front' },
+    );
+    expect(state.scene.layers.map((l) => l.id)).toEqual(['right', 'center', 'left']);
+  });
+});
+
+describe('sceneRenamed', () => {
+  it('renames and ignores blank names', () => {
+    const renamed = run(initialStudioState(), { type: 'sceneRenamed', name: 'Launch hero' });
+    expect(renamed.scene.name).toBe('Launch hero');
+    expect(run(renamed, { type: 'sceneRenamed', name: '   ' }).scene.name).toBe('Launch hero');
   });
 });

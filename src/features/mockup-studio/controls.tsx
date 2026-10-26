@@ -24,6 +24,8 @@ export function RangeField(props: {
   format: (value: number) => string;
   disabled?: boolean;
   onChange: (value: number) => void;
+  /** Called when a drag or key press ends, closing one undo step. */
+  onCommit?: () => void;
 }) {
   const id = useId();
   return (
@@ -44,6 +46,9 @@ export function RangeField(props: {
         disabled={props.disabled}
         aria-valuetext={props.format(props.value)}
         onChange={(event) => props.onChange(Number(event.target.value))}
+        onPointerUp={props.onCommit}
+        onKeyUp={props.onCommit}
+        onBlur={props.onCommit}
         className={styles.range}
       />
     </div>
