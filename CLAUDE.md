@@ -18,3 +18,9 @@ instead of guessing.
   output has been inspected; update with
   `npx playwright test visual --update-snapshots`.
 - Keep `docs/IMPLEMENTATION_STATUS.md` current at the end of each milestone.
+- Scene persistence goes through `SceneRepository` (ADR 0010); never read
+  IndexedDB directly from UI code.
+- `src/spikes/` and `/lab/device-spike` are experiments (ADR 0011). Do not
+  import them from product code until a decision moves them into the product.
+- Pre-rendered device views are produced by `asset-pipeline/` and must pass
+  its screen-mapping verification; never hand-edit `public/lab-assets`.

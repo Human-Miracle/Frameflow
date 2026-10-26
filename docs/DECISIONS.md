@@ -23,10 +23,13 @@ This file summarizes current decisions. Full records are in `docs/ADR/`.
 9.  **Modular monolith by default** --- avoid premature microservices.
 10. **Security, testing, observability, and rate limits are
     non-negotiable** --- include them in the initial implementation.
-11. **One browser canvas renderer** --- preview and PNG export share one
+11. **One browser canvas renderer**: preview and PNG export share one
     Canvas 2D renderer; screenshots stay in the browser (ADR 0008).
-12. **Single package with module folders** --- one Next.js package until
+12. **Single package with module folders**: one Next.js package until
     the render worker arrives (ADR 0009).
-13. **Browser-local scene persistence** --- scenes and their original
+13. **Browser-local scene persistence**: scenes and their original
     screenshots are saved in IndexedDB behind a repository interface
     (ADR 0010).
+14. **Pre-rendered device views (proposed)**: premium mockups use
+    offline Blender Cycles renders with a verified homography for the
+    screen; real-time WebGL is not used for export (ADR 0011).

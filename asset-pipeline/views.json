@@ -1,0 +1,35 @@
+[
+  {
+    "id": "floating-cinematic",
+    "style": "cinematic",
+    "finish": "graphite",
+    "yaw": 26,
+    "pitch": 14,
+    "roll": -8,
+    "fov": 22,
+    "size": 1400,
+    "samples": 64
+  },
+  {
+    "id": "floating-minimal",
+    "style": "minimal",
+    "finish": "silver",
+    "yaw": -24,
+    "pitch": 12,
+    "roll": 6,
+    "fov": 22,
+    "size": 1400,
+    "samples": 64
+  },
+  {
+    "id": "hero-minimal",
+    "style": "minimal",
+    "finish": "silver",
+    "yaw": -14,
+    "pitch": -24,
+    "roll": 0,
+    "fov": 32,
+    "size": 1400,
+    "samples": 64
+  }
+]

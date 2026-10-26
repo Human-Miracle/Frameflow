@@ -1,8 +1,8 @@
 # Implementation Status
 
-Version: 0.1
+Version: 0.2
 Date: 2026-10-26
-Status: Milestones 0 to 2 complete, pending visual review by the product owner
+Status: Milestones 0 to 3 complete; device-rendering spike done, decision (ADR 0011) pending visual review
 
 ## Milestone 0: repository assessment
 
@@ -84,18 +84,59 @@ screens rendered from HTML by `npm run fixtures`.
     need their own baselines.
 -   Scenes are not persisted; reloading the page starts over.
 
-## Next milestone: Scene Composer (Milestone 3)
+## Milestone 3: Scene Composer
 
-Acceptance criteria from the Implementation Plan:
+Done:
 
--   A user can edit and reuse scenes without rebuilding from scratch.
--   A saved scene reopens consistently.
--   Renderer regression tests pass.
+-   Save, Save as copy, Open, New and Delete for scenes, stored in this
+    browser's IndexedDB with their original screenshot files (ADR 0010).
+-   Reopened scenes are validated again, including every screenshot's
+    bytes. Missing screenshots are reported and their devices left empty.
+-   Saved, unsaved and saving states, an unload warning, and clear errors
+    when storage is full or unavailable.
+-   Undo and redo (buttons, Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, Ctrl+Y). A slider
+    drag is one step; selection is not an edit.
+-   Layer reordering with forward and backward controls; paint order is the
+    layer order.
+-   Scene renaming.
 
-Planned work: undo and redo, save and reopen scene files with
-re-linking of screenshots by ID, layer reordering, and the decision on
-photographic device assets.
+Verified by unit tests for history, layer moves and the repository
+contract, and by browser tests that save, reload, reopen and export a
+byte-identical PNG, plus undo/redo, reordering and blocked-storage cases.
+
+Limitations: scenes stay on one browser profile; no sync, backup or
+sharing; no export or import of scene files yet.
+
+## Device-rendering spike
+
+Compared the current Canvas 2D renderer, real-time WebGL (three.js) and
+pre-rendered Blender Cycles views with homography compositing. Results,
+timings and images: ADR 0011 and `docs/spikes/device-rendering/`. The lab
+page `/lab/device-spike` is experimental, not linked from navigation, and
+not part of Mockup Studio.
+
+Outcome: pre-rendered views give real perspective, path-traced metal and
+shadows, and an exactly placed screenshot (verified mapping error under
+0.004 px) in about 300 ms per export. They are a clear improvement over the
+current renderer but are not yet at the reference quality: the device
+model needs thinner bezels and hardware detail, lighting and environments
+need work, and editorial text layers do not exist yet.
+
+## Next milestone
+
+Proposed, pending the product owner's review of the spike images:
+
+1.  Upgrade the device model (bezel thickness, camera module, ports, antenna
+    lines) and render a small set of curated views at 3000 px or more.
+2.  Scene schema v2 with a per-device view reference and migration from v1.
+3.  Bring pre-rendered views into Mockup Studio behind the same scene model,
+    with export verified as today.
+
+Acceptance criteria: on the same screenshot, the product owner judges the
+output comparable to the reference images for the supported views; the
+upload-to-export journey, save/reopen and golden tests still pass.
 
 ## Change log
 
 -   0.1 (2026-10-26): Milestones 0 to 2.
+-   0.2 (2026-10-26): Milestone 3 and the device-rendering spike.

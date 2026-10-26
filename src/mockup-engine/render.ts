@@ -48,7 +48,7 @@ export function rgba(hex: string, alpha: number): string {
   return `rgba(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`;
 }
 
-function paintBackground(ctx: Canvas2D, background: Background, size: Size): void {
+export function paintBackground(ctx: Canvas2D, background: Background, size: Size): void {
   const { fill } = background;
   const { width, height } = size;
   if (fill.kind === 'solid') {

@@ -1,0 +1,12 @@
+{
+  "webgl-quadrants-straight": 9453,
+  "baked-quadrants-floating": 360,
+  "1-current-2d-minimal": 65,
+  "2-current-2d-cinematic-stack": 140,
+  "3-webgl-floating-cinematic": 9873,
+  "4-webgl-hero-minimal": 11400,
+  "5-webgl-stack-cinematic": 10114,
+  "6-baked-floating-cinematic": 349,
+  "7-baked-floating-minimal": 308,
+  "8-baked-hero-minimal": 276
+}

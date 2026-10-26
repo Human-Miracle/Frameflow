@@ -1,0 +1,56 @@
+{
+  "formatVersion": 1,
+  "deviceAssetId": "frameflow-phone",
+  "deviceAssetVersion": "1.0.0",
+  "view": {
+    "id": "floating-cinematic",
+    "style": "cinematic",
+    "finish": "graphite",
+    "yaw": 26,
+    "pitch": 14,
+    "roll": -8,
+    "fov": 22,
+    "size": 1400,
+    "samples": 64
+  },
+  "image": {
+    "width": 1400,
+    "height": 1400,
+    "beauty": "beauty.png",
+    "mask": "mask.png"
+  },
+  "screenCorners": [
+    [462.7857506275177, 191.20714664459229],
+    [929.4187188148499, 152.1383285522461],
+    [931.8894028663635, 1157.6124429702759],
+    [503.2535910606384, 1248.5077768564224]
+  ],
+  "screenNative": {
+    "width": 1179,
+    "height": 2556
+  },
+  "deviceBounds": {
+    "x": 415.4187202453613,
+    "y": 125.06953477859497,
+    "width": 539.6673917770386,
+    "height": 1129.2961969971657
+  },
+  "verification": {
+    "method": "UV pass vs homography of projected corners",
+    "samples": 20000,
+    "meanErrorScreenPx": 0.0011,
+    "p999ErrorScreenPx": 0.0035,
+    "toleranceScreenPx": 0.5,
+    "passed": true
+  },
+  "render": {
+    "engine": "Blender Cycles",
+    "blender": "5.2.3 LTS",
+    "samples": 64
+  },
+  "license": {
+    "kind": "original",
+    "holder": "Frameflow project",
+    "terms": "Rendered by the Frameflow asset pipeline from original geometry; no third-party models, textures or HDR images."
+  }
+}
