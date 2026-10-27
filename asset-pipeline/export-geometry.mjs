@@ -1,9 +1,15 @@
 // Exports a device asset's outlines as polygons for the Blender pipeline, so the
 // rendered device is built from the same geometry as the app's renderers.
-// Usage: node --experimental-strip-types asset-pipeline/export-geometry.mjs <out.json>
+// Usage: node --experimental-strip-types asset-pipeline/export-geometry.mjs <EXPORT_NAME> <out.json>
+// e.g. FRAMEFLOW_PHONE (v1, src/devices/frameflow-phone.ts) or FRAMEFLOW_PHONE_V2.
 import { writeFile } from 'node:fs/promises';
-import { FRAMEFLOW_PHONE as asset } from '../src/devices/frameflow-phone.ts';
+import * as v1 from '../src/devices/frameflow-phone.ts';
+import * as v2 from '../src/devices/frameflow-phone-v2.ts';
 import { smoothRoundedRect } from '../src/mockup-engine/paths.ts';
+
+const [exportName, outPath] = process.argv.slice(2);
+const asset = { ...v1, ...v2 }[exportName];
+if (!asset) throw new Error(`Unknown device export "${exportName}"`);
 
 /** Flattens the smoothed rounded-rect path into a polygon (device units, y down). */
 function outline(rect, smoothing, inset = 0, steps = 24) {
@@ -53,7 +59,15 @@ const geometry = {
   glassOutline: outline(asset.body, asset.cornerSmoothing, asset.frameWidth * 0.55),
   screenOutline: outline(asset.screen, asset.cornerSmoothing),
   buttons: asset.buttons,
+  cutouts: asset.cutouts.map((c) => ({
+    ...c,
+    outline: outline(
+      { ...c, x: asset.screen.x + c.x, y: asset.screen.y + c.y, cornerRadius: c.height / 2 },
+      0,
+    ),
+  })),
+  hardware: asset.hardware ?? null,
   license: asset.license,
 };
-await writeFile(process.argv[2], JSON.stringify(geometry));
-console.log(`Wrote ${process.argv[2]}: ${geometry.bodyOutline.length} body points`);
+await writeFile(outPath, JSON.stringify(geometry));
+console.log(`Wrote ${outPath}: ${asset.id}@${asset.version}, ${geometry.bodyOutline.length} body points`);

@@ -1,0 +1,115 @@
+{
+  "formatVersion": 2,
+  "pipelineVersion": "2.1.0",
+  "deviceAssetId": "frameflow-phone",
+  "deviceAssetVersion": "2.0.0",
+  "view": {
+    "id": "front",
+    "label": "Straight-on hero",
+    "yaw": 0,
+    "pitch": 0,
+    "roll": 0,
+    "fov": 16,
+    "finish": "silver",
+    "lighting": "studio",
+    "longest": 3200,
+    "samples": 64
+  },
+  "image": {
+    "width": 1541,
+    "height": 3200,
+    "beauty": "beauty.webp",
+    "mask": "mask.png",
+    "matte": "matte.png",
+    "beautyBytes": 110312,
+    "maskBytes": 22176,
+    "matteBytes": 23121,
+    "masterPngBytes": 2219533
+  },
+  "screenPlane": {
+    "corners": [
+      [277.1930488049984, 530.5404663085938],
+      [1263.8069971203804, 530.5404663085938],
+      [1263.8069971203804, 2669.4594383239746],
+      [277.1930488049984, 2669.4594383239746]
+    ],
+    "native": {
+      "width": 1179,
+      "height": 2556
+    }
+  },
+  "screenCorners": [
+    [277.1930488049984, 530.5404663085938],
+    [1263.8069971203804, 530.5404663085938],
+    [1263.8069971203804, 2669.4594383239746],
+    [277.1930488049984, 2669.4594383239746]
+  ],
+  "deviceBounds": {
+    "x": 235.44302174448967,
+    "y": 488.8887405395508,
+    "width": 1070.1140024363995,
+    "height": 2222.2225189208984
+  },
+  "gates": {
+    "homography": {
+      "samples": 20000,
+      "meanErrorScreenPx": 0.0006,
+      "p999ErrorScreenPx": 0.0031,
+      "tolerance": 0.5,
+      "passed": true
+    },
+    "mask": {
+      "screenAreaPx": 2050029,
+      "disagreeingPx": 0,
+      "disagreeingFraction": 0.0,
+      "meanAbsDifference": 0.000273,
+      "tolerance": 0.0001,
+      "passed": true
+    },
+    "framing": {
+      "rawMaxBorderAlpha": 0.0275,
+      "maxBorderAlpha": 0.0,
+      "feather": 0.08,
+      "deviceInsideUnfeatheredArea": true,
+      "tolerance": 0.02,
+      "passed": true
+    },
+    "size": {
+      "longestSidePx": 3200,
+      "minimum": 3000,
+      "passed": true
+    },
+    "matte": {
+      "devicePx": 2313659,
+      "excessPx": 0,
+      "fraction": 0.0,
+      "tolerance": 0.001,
+      "passed": true
+    }
+  },
+  "verification": {
+    "passed": true,
+    "p999ErrorScreenPx": 0.0031
+  },
+  "render": {
+    "engine": "Blender Cycles (CPU)",
+    "blender": "5.2.3 LTS",
+    "maxSamples": 64,
+    "denoiser": "OpenImageDenoise",
+    "viewTransform": "AgX",
+    "beautySeconds": 263.3,
+    "totalSeconds": 383.3
+  },
+  "provenance": {
+    "geometry": "src/devices/frameflow-phone-v2.ts via asset-pipeline/export-geometry.mjs (original)",
+    "materials": "Procedural Blender shaders defined in asset-pipeline/blender/render_device.py (original)",
+    "lighting": "Procedural area lights and uniform world colour (original); no HDR images",
+    "textures": "None",
+    "thirdPartyAssets": []
+  },
+  "license": {
+    "kind": "original",
+    "holder": "Frameflow project",
+    "terms": "Rendered by the Frameflow asset pipeline from original geometry; no third-party models, textures or HDR images."
+  }
+}

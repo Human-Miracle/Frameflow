@@ -31,6 +31,24 @@ export interface SideButton {
 
 export type DeviceFinish = 'graphite' | 'silver';
 
+/**
+ * Physical detail used by the pre-rendered asset pipeline. Not used by the 2D
+ * renderer. Lengths are device units unless noted.
+ */
+export interface HardwareDetails {
+  thickness: number;
+  /** Width of the rounded transition between the flat side band and the faces. */
+  edgeRadius: number;
+  /** Plastic antenna breaks in the metal band. `offset` is from the top (sides) or left (top/bottom). */
+  antennaLines: readonly { edge: 'left' | 'right' | 'top' | 'bottom'; offset: number; width: number }[];
+  /** Charging port centred on the bottom edge; `height` runs through the device's thickness. */
+  bottomPort: { width: number; height: number };
+  /** A row of holes on each side of the port. */
+  speakerHoles: { diameter: number; spacing: number; count: number; gapFromPort: number };
+  /** Front camera lens seen through the first cutout, at its right end. */
+  frontLens: { diameter: number };
+}
+
 export interface DeviceAsset {
   id: string;
   version: string;
@@ -56,4 +74,5 @@ export interface DeviceAsset {
     perspective: false;
   };
   materialNotes: string;
+  hardware?: HardwareDetails;
 }

@@ -1,0 +1,74 @@
+[
+  {
+    "id": "front",
+    "label": "Straight-on hero",
+    "yaw": 0,
+    "pitch": 0,
+    "roll": 0,
+    "fov": 16,
+    "finish": "silver",
+    "lighting": "studio",
+    "longest": 3200,
+    "samples": 64
+  },
+  {
+    "id": "three-quarter-left",
+    "label": "Slight three-quarter, left",
+    "yaw": -20,
+    "pitch": 10,
+    "roll": 0,
+    "fov": 18,
+    "finish": "silver",
+    "lighting": "studio",
+    "longest": 3200,
+    "samples": 64
+  },
+  {
+    "id": "three-quarter-right",
+    "label": "Slight three-quarter, right",
+    "yaw": 20,
+    "pitch": 10,
+    "roll": 0,
+    "fov": 18,
+    "finish": "silver",
+    "lighting": "studio",
+    "longest": 3200,
+    "samples": 64
+  },
+  {
+    "id": "angle-left",
+    "label": "Moderate angle, left (for overlaps)",
+    "yaw": -34,
+    "pitch": 16,
+    "roll": 0,
+    "fov": 18,
+    "finish": "silver",
+    "lighting": "studio",
+    "longest": 3200,
+    "samples": 64
+  },
+  {
+    "id": "angle-right",
+    "label": "Moderate angle, right (for overlaps)",
+    "yaw": 34,
+    "pitch": 16,
+    "roll": 0,
+    "fov": 18,
+    "finish": "silver",
+    "lighting": "studio",
+    "longest": 3200,
+    "samples": 64
+  },
+  {
+    "id": "steep",
+    "label": "Steep perspective (mapping limit test)",
+    "yaw": 28,
+    "pitch": 52,
+    "roll": 0,
+    "fov": 26,
+    "finish": "silver",
+    "lighting": "studio",
+    "longest": 3200,
+    "samples": 64
+  }
+]
