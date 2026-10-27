@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPyramid, compositeScreen, type BakedView, type RgbaImage } from './composite';
+import { buildPyramid, compositeScreen, scaleShadow, type BakedView, type RgbaImage } from './composite';
 import { applyHomography, invertMat3, solveHomography } from './homography';
 
 function image(
@@ -163,5 +163,63 @@ describe('compositeScreen', () => {
     ]);
     const pyramid = buildPyramid(quadrants(50, 100));
     expect(compositeScreen(v, pyramid).data).toEqual(compositeScreen(v, pyramid).data);
+  });
+});
+
+describe('compositeScreen sampling', () => {
+  // A non-power-of-two (about 3.3x), slightly rotated minification: the case plain trilinear
+  // handles worst. (At exact powers of two trilinear is already a perfect box filter.)
+  const corners = [
+    { x: 1.5, y: 0.5 },
+    { x: 39.8, y: 2.1 },
+    { x: 38.2, y: 39.9 },
+    { x: 0.4, y: 38.6 },
+  ] as const;
+  // A fine checkerboard and a sharp edge.
+  const detail = image(128, 128, (x, y) =>
+    x < 64 ? ((x + y) % 2 ? [255, 255, 255] : [0, 0, 0]) : [200, 30, 30],
+  );
+
+  it('measures both sampling methods against an 8x8 reference on worst-case detail', () => {
+    const pyramid = buildPyramid(detail);
+    const reference = compositeScreen(view(41, corners), pyramid, 0, { samples: 8, fixedLevel: 0 });
+    const error = (samples: number) => {
+      const result = compositeScreen(view(41, corners), pyramid, 0, { samples });
+      let total = 0;
+      for (let i = 0; i < result.data.length; i += 4)
+        for (let c = 0; c < 3; c += 1) total += Math.abs(result.data[i + c]! - reference.data[i + c]!);
+      return total / (41 * 41 * 3);
+    };
+    // A one-pixel checkerboard is the aliasing worst case: plain trilinear wins here because
+    // 2x2 subsamples read finer mip levels. Real UI is measured in the browser gate.
+    expect(error(1)).toBeLessThan(1);
+    expect(error(1)).toBeLessThan(error(2));
+  });
+});
+
+describe('scaleShadow', () => {
+  // Four pixels: device (opaque, matte 255), device edge (alpha 200, matte 180), shadow (alpha 120), empty.
+  const beauty: RgbaImage = {
+    width: 4,
+    height: 1,
+    data: new Uint8ClampedArray([200, 200, 200, 255, 90, 90, 90, 200, 0, 0, 0, 120, 0, 0, 0, 0]),
+  };
+  const matte = new Uint8ClampedArray([255, 180, 0, 0]);
+
+  it('leaves the render unchanged at strength 1', () => {
+    expect(scaleShadow(beauty, matte, 1).data).toEqual(beauty.data);
+  });
+
+  it('scales only the alpha above the device matte', () => {
+    const half = scaleShadow(beauty, matte, 0.5).data;
+    expect(half[3]).toBe(255);
+    expect(half[7]).toBe(190);
+    expect(half[11]).toBe(60);
+    expect(Array.from(half.slice(0, 3))).toEqual([200, 200, 200]);
+  });
+
+  it('removes the shadow entirely at strength 0 while keeping the device', () => {
+    const none = scaleShadow(beauty, matte, 0).data;
+    expect([none[3], none[7], none[11], none[15]]).toEqual([255, 180, 0, 0]);
   });
 });

@@ -1,9 +1,16 @@
-// Regenerates tests/fixtures. Run with `npm run fixtures`; the output is committed.
-import { writeFile } from 'node:fs/promises';
+// Generates tests/fixtures. Run with `npm run fixtures`; the output is committed.
+// Existing files are kept so golden-image inputs never change; FORCE=1 regenerates all.
+import { existsSync } from 'node:fs';
+import { writeFile as write } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
-import { darkUi, lightUi, quadrants } from './fixture-pages.mjs';
+import { darkUi, edgeContent, lightUi, quadrants } from './fixture-pages.mjs';
 
 const out = new URL('../tests/fixtures/', import.meta.url);
+const writeFile = async (url, data) => {
+  if (existsSync(url) && !process.env.FORCE) return;
+  await write(url, data);
+  console.log(`Wrote ${url.pathname}`);
+};
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 393, height: 852 }, deviceScaleFactor: 3 });
 
@@ -18,6 +25,7 @@ await shoot(lightUi, 'light-ui.png');
 await shoot(darkUi, 'dark-ui.png');
 await shoot(quadrants, 'quadrants.png');
 await shoot(lightUi, 'light-ui.jpg', 'jpeg');
+await shoot(edgeContent, 'edge-content.png');
 
 // WebP via the browser's encoder.
 await page.setContent(darkUi);

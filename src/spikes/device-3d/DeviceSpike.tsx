@@ -6,12 +6,20 @@ import { renderScene, type ScreenLookup } from '@/mockup-engine/render';
 import type { Scene } from '@/scene/schema';
 import { applyStyle, createScene } from '@/scene/templates';
 import { decodeScreenshot, type DecodedScreen } from '@/upload/decode';
-import bakedViews from '../../../asset-pipeline/views.json';
+import bakedViews from '../../../asset-pipeline/frameflow-phone-v1/views.json';
+import libraryViews from '../../../asset-pipeline/frameflow-phone-v2/views.json';
+import {
+  DEFAULT_SHADOW_STRENGTH,
+  loadLibraryView,
+  renderLibraryScene,
+  type CompositeMode,
+  type LibraryView,
+} from '../baked/library';
 import { loadBakedView, renderSceneBaked, type LoadedBakedView } from '../baked/render-baked';
 import { renderScene3D, type Orientation } from './render-3d';
 import styles from './spike.module.css';
 
-type Renderer = 'canvas-2d' | 'webgl-3d' | 'baked';
+type Renderer = 'canvas-2d' | 'webgl-3d' | 'baked' | 'library';
 
 interface Settings {
   renderer: Renderer;
@@ -23,6 +31,10 @@ interface Settings {
   fov: number;
   glass: number;
   bakedViewId: string;
+  /** Library view per template slot (layer ID). */
+  libraryViews: Record<string, string>;
+  compositeMode: CompositeMode;
+  shadowStrength: number;
   width: number;
   height: number;
 }
@@ -76,7 +88,18 @@ async function renderComparison(
   const size = { width: settings.width, height: settings.height };
   const start = performance.now();
   let canvas: OffscreenCanvas;
-  if (settings.renderer === 'baked') {
+  if (settings.renderer === 'library') {
+    const views = new Map<string, LibraryView>();
+    for (const layer of scene.layers) {
+      views.set(layer.id, await loadLibraryView(settings.libraryViews[layer.id] ?? 'front'));
+    }
+    // Library views are lit as a studio shoot; in-plane rotation of the stack is kept as camera roll.
+    canvas = renderLibraryScene(scene, size, lookup, views, {
+      mode: settings.compositeMode,
+      glare: settings.glass,
+      shadowStrength: settings.shadowStrength,
+    });
+  } else if (settings.renderer === 'baked') {
     const view = await bakedView(settings.bakedViewId);
     canvas = renderSceneBaked(applyStyle(scene, view.meta.view.style), size, lookup, view, settings.glass);
   } else if (settings.renderer === 'webgl-3d') {
@@ -104,6 +127,9 @@ export function DeviceSpike() {
     ...VIEW_PRESETS.floating,
     glass: 0,
     bakedViewId: bakedViews[0]!.id,
+    libraryViews: { hero: 'front', left: 'angle-right', right: 'angle-left', center: 'three-quarter-right' },
+    compositeMode: 'direct',
+    shadowStrength: DEFAULT_SHADOW_STRENGTH,
     width: 1920,
     height: 1080,
   });
@@ -176,6 +202,7 @@ export function DeviceSpike() {
             <option value="canvas-2d">Current: Canvas 2D vector</option>
             <option value="webgl-3d">Spike: WebGL 3D (real time)</option>
             <option value="baked">Spike: pre-rendered view (Blender Cycles)</option>
+            <option value="library">Library v2: pre-rendered angles (quality gate)</option>
           </select>
         </label>
         <label className={styles.field}>
@@ -198,6 +225,53 @@ export function DeviceSpike() {
             <option value="cinematic">Cinematic</option>
           </select>
         </label>
+        {settings.renderer === 'library' && (
+          <>
+            {(settings.templateId === 'single-hero' ? ['hero'] : ['left', 'right', 'center']).map((slot) => (
+              <label key={slot} className={styles.field}>
+                Library view: {slot}
+                <select
+                  value={settings.libraryViews[slot]}
+                  onChange={(e) =>
+                    setSettings((s) => ({
+                      ...s,
+                      libraryViews: { ...s.libraryViews, [slot]: e.target.value },
+                    }))
+                  }
+                >
+                  {libraryViews.map((view) => (
+                    <option key={view.id} value={view.id}>
+                      {view.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+            <label className={styles.field}>
+              Screen compositing
+              <select
+                value={settings.compositeMode}
+                onChange={(e) => update('compositeMode', e.target.value as CompositeMode)}
+              >
+                <option value="direct">Direct at output resolution (2×2 area sampling)</option>
+                <option value="direct-trilinear">Direct, plain trilinear</option>
+                <option value="two-step">Two-step (spike method)</option>
+                <option value="reference">Reference, 8×8 supersampled (slow, for measurement)</option>
+              </select>
+            </label>
+            <label className={styles.field}>
+              Shadow strength {Math.round(settings.shadowStrength * 100)}%
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={settings.shadowStrength}
+                onChange={(e) => update('shadowStrength', Number(e.target.value))}
+              />
+            </label>
+          </>
+        )}
         {settings.renderer === 'baked' && (
           <label className={styles.field}>
             Pre-rendered view (lighting and style are baked in; one device)

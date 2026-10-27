@@ -111,3 +111,33 @@ export const quadrants = `<!doctype html><html><head><style>
   <div style="background:#FF0000"></div><div style="background:#00FF00"></div>
   <div style="background:#0000FF"></div><div style="background:#FFFF00"></div>
 </body></html>`;
+
+/**
+ * Content that runs to every edge of the screen: a 6 px (at 3x) magenta border,
+ * a full-bleed image at the top, edge-hugging text and a bottom bar. Used to check
+ * that compositing never clips content beyond the device's rounded corners.
+ */
+export const edgeContent = `<!doctype html><html><head><style>${base}
+  body { background: #FFFFFF; color: #111; position: relative; }
+  .border { position: absolute; inset: 0; border: 2px solid #FF00FF; z-index: 10; pointer-events: none; }
+  .hero { height: 330px; background: linear-gradient(135deg, #0B3D91 0%, #1E88E5 45%, #FFB300 100%); position: relative; }
+  .hero h1 { position: absolute; left: 0; bottom: 14px; color: #fff; font-size: 34px; letter-spacing: -0.02em; padding-left: 2px; }
+  .row { display: flex; justify-content: space-between; padding: 12px 2px; border-bottom: 1px solid #E6E6E6; font-size: 15px; }
+  .row b { font-weight: 700; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin-top: 8px; }
+  .grid div { height: 70px; }
+  .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; background: #111; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 2px; font-size: 14px; }
+</style></head><body>
+  <div class="border"></div>
+  <div class="hero"><h1>Edge to edge</h1></div>
+  <div class="row"><b>Left edge text</b><span>Right edge text</span></div>
+  <div class="row"><span>Small caption 11pt</span><span>98.6%</span></div>
+  <div class="row"><b>Statement balance</b><span>12 Oct to 11 Nov</span></div>
+  <div class="grid">
+    <div style="background:#E53935"></div><div style="background:#43A047"></div><div style="background:#1E88E5"></div><div style="background:#FDD835"></div>
+    <div style="background:#8E24AA"></div><div style="background:#00ACC1"></div><div style="background:#FB8C00"></div><div style="background:#6D4C41"></div>
+  </div>
+  <div class="row"><span>The quick brown fox jumps over the lazy dog</span></div>
+  <div class="row"><span>0123456789 ABCDEFGHIJKLM nopqrstuvwxyz</span></div>
+  <div class="bar"><span>Left</span><span>Bottom bar touches the edge</span><span>Right</span></div>
+</body></html>`;

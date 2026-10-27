@@ -69,15 +69,32 @@ function bilinear(level: RgbaImage, x: number, y: number, out: number[]): void {
   }
 }
 
+export interface SamplingOptions {
+  /**
+   * Subsamples per axis within each output pixel when minifying. 1 is plain
+   * trilinear filtering. Higher values read finer mip levels per subsample,
+   * which keeps more detail but can let the finest patterns alias.
+   */
+  samples?: number;
+  /** Force a mip level (0 = full resolution) instead of choosing it per sample. Used for reference renders. */
+  fixedLevel?: number;
+}
+
 /**
  * Warps the screen image into the baked view with the exact homography of its
- * corners, sampling a mip pyramid trilinearly, and blends it in by the
- * screen mask. Outside the mask the beauty pass is returned untouched.
+ * corners, sampling a mip pyramid, and blends it in by the screen mask.
+ * Outside the mask the beauty pass is returned untouched.
  *
  * `glare` adds the cover-glass reflections rendered in the beauty pass on top
  * of the screen; 0 leaves screenshot pixels exactly as sampled.
  */
-export function compositeScreen(view: BakedView, pyramid: readonly RgbaImage[], glare = 0): RgbaImage {
+export function compositeScreen(
+  view: BakedView,
+  pyramid: readonly RgbaImage[],
+  glare = 0,
+  options: SamplingOptions = {},
+): RgbaImage {
+  const n = Math.max(1, Math.round(options.samples ?? 1));
   const { beauty, mask, corners } = view;
   const screen = pyramid[0]!;
   const toBeauty = solveHomography(
@@ -101,29 +118,41 @@ export function compositeScreen(view: BakedView, pyramid: readonly RgbaImage[], 
 
   const low = [0, 0, 0];
   const high = [0, 0, 0];
+  const sum = [0, 0, 0];
+  const sampleAt = (px: number, py: number, step: number) => {
+    const centre = applyHomography(toScreen, { x: px, y: py });
+    const right = applyHomography(toScreen, { x: px + step, y: py });
+    const down = applyHomography(toScreen, { x: px, y: py + step });
+    const footprint = Math.max(
+      Math.hypot(right.x - centre.x, right.y - centre.y),
+      Math.hypot(down.x - centre.x, down.y - centre.y),
+    );
+    const lod =
+      options.fixedLevel ?? Math.min(pyramid.length - 1, Math.max(0, Math.log2(Math.max(1, footprint))));
+    const l0 = Math.floor(lod);
+    const l1 = Math.min(pyramid.length - 1, l0 + 1);
+    const t = lod - l0;
+    const s0 = pyramid[l0]!;
+    const s1 = pyramid[l1]!;
+    bilinear(s0, (centre.x * s0.width) / screen.width, (centre.y * s0.height) / screen.height, low);
+    bilinear(s1, (centre.x * s1.width) / screen.width, (centre.y * s1.height) / screen.height, high);
+    for (let c = 0; c < 3; c += 1) sum[c]! += low[c]! + (high[c]! - low[c]!) * t;
+  };
   for (let y = minY; y <= maxY; y += 1) {
     for (let x = minX; x <= maxX; x += 1) {
       const index = y * beauty.width + x;
       const coverage = mask[index]! / 255;
       if (coverage === 0) continue;
+      sum[0] = sum[1] = sum[2] = 0;
+      // Subsample only when minifying; at 1:1 or larger a single centre sample keeps pixels exact.
       const centre = applyHomography(toScreen, { x: x + 0.5, y: y + 0.5 });
-      const right = applyHomography(toScreen, { x: x + 1.5, y: y + 0.5 });
-      const down = applyHomography(toScreen, { x: x + 0.5, y: y + 1.5 });
-      const footprint = Math.max(
-        Math.hypot(right.x - centre.x, right.y - centre.y),
-        Math.hypot(down.x - centre.x, down.y - centre.y),
-      );
-      const lod = Math.min(pyramid.length - 1, Math.max(0, Math.log2(Math.max(1, footprint))));
-      const l0 = Math.floor(lod);
-      const l1 = Math.min(pyramid.length - 1, l0 + 1);
-      const t = lod - l0;
-      const s0 = pyramid[l0]!;
-      const s1 = pyramid[l1]!;
-      bilinear(s0, (centre.x * s0.width) / screen.width, (centre.y * s0.height) / screen.height, low);
-      bilinear(s1, (centre.x * s1.width) / screen.width, (centre.y * s1.height) / screen.height, high);
+      const across = applyHomography(toScreen, { x: x + 1.5, y: y + 0.5 });
+      const k = Math.hypot(across.x - centre.x, across.y - centre.y) > 1.0001 ? n : 1;
+      for (let sy = 0; sy < k; sy += 1)
+        for (let sx = 0; sx < k; sx += 1) sampleAt(x + (sx + 0.5) / k, y + (sy + 0.5) / k, 1 / k);
       const o = index * 4;
       for (let c = 0; c < 3; c += 1) {
-        const sampled = low[c]! + (high[c]! - low[c]!) * t;
+        const sampled = sum[c]! / (k * k);
         const base = beauty.data[o + c]!;
         out[o + c] = base * (1 - coverage) + sampled * coverage + glare * coverage * base;
       }
@@ -131,4 +160,23 @@ export function compositeScreen(view: BakedView, pyramid: readonly RgbaImage[], 
     }
   }
   return { width: beauty.width, height: beauty.height, data: out };
+}
+
+/**
+ * Scales a pre-rendered shadow without touching the device: alpha above the
+ * device matte is shadow and is multiplied by `strength`; the device's own
+ * coverage is kept. 1 returns the render as lit; 0 removes the shadow.
+ */
+export function scaleShadow(
+  beauty: RgbaImage,
+  matte: Uint8ClampedArray<ArrayBuffer>,
+  strength: number,
+): RgbaImage {
+  const data = new Uint8ClampedArray(beauty.data);
+  for (let i = 0; i < matte.length; i += 1) {
+    const a = data[i * 4 + 3]!;
+    const m = matte[i]!;
+    if (a > m) data[i * 4 + 3] = Math.round(m + (a - m) * strength);
+  }
+  return { width: beauty.width, height: beauty.height, data };
 }
