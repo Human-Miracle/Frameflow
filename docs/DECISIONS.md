@@ -33,3 +33,7 @@ This file summarizes current decisions. Full records are in `docs/ADR/`.
 14. **Pre-rendered device views (proposed)**: premium mockups use
     offline Blender Cycles renders with a verified homography for the
     screen; real-time WebGL is not used for export (ADR 0011).
+15. **Device asset library v2 and quality gate (proposed)**: curated
+    pre-rendered views of the v2 device, grounded studio lighting, a
+    render-time and test-time quality gate, and direct compositing at output
+    resolution; continuous rotation is unsupported (ADR 0012).

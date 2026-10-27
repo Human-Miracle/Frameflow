@@ -23,4 +23,8 @@ instead of guessing.
 - `src/spikes/` and `/lab/device-spike` are experiments (ADR 0011). Do not
   import them from product code until a decision moves them into the product.
 - Pre-rendered device views are produced by `asset-pipeline/` and must pass
-  its screen-mapping verification; never hand-edit `public/lab-assets`.
+  its quality gate; never hand-edit `public/lab-assets`. After re-rendering,
+  run `node asset-pipeline/report.mjs <library folder>` and update the
+  results table in ADR 0012.
+- `FRAMEFLOW_PHONE_V2` is not registered in `DEVICE_ASSETS` until the asset
+  library is approved for production (ADR 0012).

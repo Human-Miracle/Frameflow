@@ -1,8 +1,8 @@
 # Implementation Status
 
-Version: 0.2
-Date: 2026-10-26
-Status: Milestones 0 to 3 complete; device-rendering spike done, decision (ADR 0011) pending visual review
+Version: 0.3
+Date: 2026-10-27
+Status: Milestones 0 to 3 complete; device asset library v2 passes its quality gate, integration pending visual review (ADR 0012)
 
 ## Milestone 0: repository assessment
 
@@ -122,21 +122,45 @@ current renderer but are not yet at the reference quality: the device
 model needs thinner bezels and hardware detail, lighting and environments
 need work, and editorial text layers do not exist yet.
 
+## Device quality gate and asset library v2
+
+Done (ADR 0012, `asset-pipeline/README.md`):
+
+-   Device model v2 (`src/devices/frameflow-phone-v2.ts`): thinner bezel
+    (50 units, from 68), rounded metal band, flush antenna breaks, pill
+    buttons, charging port and speaker holes, cover-glass slab, cutout with
+    lens. Not registered in the production device registry.
+-   Pipeline 2.1 renders a resting device with an orbiting camera, grounded
+    soft shadows and restrained light-linked highlights, and writes beauty,
+    screen mask, device matte and `asset.json` per view.
+-   Six views at 3200 px on the longest side: front, three-quarter left and
+    right, moderate angle left and right, steep. All pass the render-time gate
+    (homography, mask, framing, size, matte) and the browser gate (light,
+    dark and edge-content screenshots, export fidelity, shadow strength).
+-   Direct compositing with 2×2 area sampling (36.1 to 40.6 dB PSNR against a
+    supersampled reference) and adjustable shadow strength.
+-   Comparison sheet and 4K exports in `docs/spikes/device-quality/`.
+
+Not done: integration into Mockup Studio, a cinematic (graphite) library,
+editorial layers, hands, props and environments. The Canvas 2D renderer is
+unchanged and remains the production renderer.
+
 ## Next milestone
 
-Proposed, pending the product owner's review of the spike images:
+Proposed, pending the product owner's review of the comparison images:
 
-1.  Upgrade the device model (bezel thickness, camera module, ports, antenna
-    lines) and render a small set of curated views at 3000 px or more.
-2.  Scene schema v2 with a per-device view reference and migration from v1.
-3.  Bring pre-rendered views into Mockup Studio behind the same scene model,
-    with export verified as today.
+1.  Scene schema v2 with a per-layer view reference and migration from v1.
+2.  Library views in Mockup Studio as an opt-in beta for Minimal, with
+    exports in a worker and a cached low-resolution preview.
+3.  A graphite, cinematic-lit library for the Cinematic style.
 
-Acceptance criteria: on the same screenshot, the product owner judges the
-output comparable to the reference images for the supported views; the
-upload-to-export journey, save/reopen and golden tests still pass.
+Acceptance criteria: a user can choose a library view per device, save and
+reopen it, and export at 4K with the same fidelity gate passing; existing
+golden images, persistence and undo/redo tests still pass; the product
+owner judges the output comparable to the references for supported views.
 
 ## Change log
 
 -   0.1 (2026-10-26): Milestones 0 to 2.
 -   0.2 (2026-10-26): Milestone 3 and the device-rendering spike.
+-   0.3 (2026-10-27): Device asset library v2 and its quality gate.

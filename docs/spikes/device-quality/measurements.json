@@ -1,0 +1,36 @@
+{
+  "psnrAgainstReference1080p": {
+    "front/light-ui.png": {
+      "direct": 40.57,
+      "direct-trilinear": 29.83,
+      "two-step": 37.18
+    },
+    "front/edge-content.png": {
+      "direct": 38.96,
+      "direct-trilinear": 28.64,
+      "two-step": 36.38
+    },
+    "angle-left/light-ui.png": {
+      "direct": 38.76,
+      "direct-trilinear": 29.23,
+      "two-step": 36.85
+    },
+    "angle-left/edge-content.png": {
+      "direct": 36.06,
+      "direct-trilinear": 27.25,
+      "two-step": 34.75
+    }
+  },
+  "renderMilliseconds": {
+    "a-production-2d-1920": 59,
+    "a-production-2d-3840": 177,
+    "b-spike-v1-floating-minimal-1920": 303,
+    "b-spike-v1-floating-minimal-3840": 337,
+    "c-v2-three-quarter-right-1920": 615,
+    "c-v2-three-quarter-right-3840": 1111,
+    "d-v2-front-1920": 572,
+    "d-v2-front-3840": 1056,
+    "e-v2-three-device-1920": 1458,
+    "e-v2-three-device-3840": 3003
+  }
+}
